@@ -1,29 +1,39 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+// controllers/userController.js
 const User = require('../models/userModel');
-require('dotenv').config();
+const bcrypt = require('bcrypt');
 
-exports.register = (req, res) => {
-    const { username, password, email, phone, role } = req.body;
-    const hashedPassword = bcrypt.hashSync(password, 8);
+// Register a new user
+const register = async (req, res) => {
+    try {
+        const userData = req.body;
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        userData.password = hashedPassword; // Update password to hashed version
 
-    User.create({ username, password: hashedPassword, email, phone, role }, (err, result) => {
-        if (err) return res.status(500).send('Error registering user.');
-        res.status(201).send({ message: 'User registered successfully.' });
-    });
+        User.create(userData, (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: err.message });
+            }
+            res.status(201).json({ message: 'User registered successfully!', userId: result.insertId });
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Error registering user: ' + error.message });
+    }
 };
 
-exports.login = (req, res) => {
+// User login
+const login = async (req, res) => {
     const { username, password } = req.body;
-
-    User.findByUsername(username, (err, results) => {
-        if (err || results.length === 0) return res.status(400).send('User not found.');
-        const user = results[0];
-
-        const passwordIsValid = bcrypt.compareSync(password, user.password);
-        if (!passwordIsValid) return res.status(401).send('Invalid password.');
-
-        const token = jwt.sign({ id: user.user_id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(200).send({ token });
+    User.findByUsername(username, async (err, user) => {
+        if (err || !user) {
+            return res.status(400).json({ error: 'Invalid username or password' });
+        }
+        const match = await bcrypt.compare(password, user.password);
+        if (!match) {
+            return res.status(400).json({ error: 'Invalid username or password' });
+        }
+        res.status(200).json({ message: 'Login successful', userId: user.user_id });
     });
 };
+
+module.exports = { register, login };
