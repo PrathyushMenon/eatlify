@@ -1,47 +1,58 @@
 // controllers/restaurantController.js
-const Restaurant = require('../models/restaurantModel');
+const {
+    addRestaurant,
+    getAllRestaurants,
+    searchRestaurants,
+    updateRestaurant
+} = require('../config/database');
 
 // Add a new restaurant
-const addRestaurant = (req, res) => {
-    const restaurantData = req.body;
-    Restaurant.create(restaurantData, (err, result) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json({ message: 'Restaurant added successfully!', restaurantId: result.insertId });
-    });
+const addNewRestaurant = async (req, res) => {
+    try {
+        const { owner_id, name, address, phone_number, cuisine_type, opening_time, closing_time } = req.body;
+
+        await addRestaurant(owner_id, name, address, phone_number, cuisine_type, opening_time, closing_time);
+        
+        res.status(201).json({ message: 'Restaurant added successfully!' });
+    } catch (error) {
+        console.error('Error adding restaurant:', error);
+        res.status(500).json({ error: 'Error adding restaurant: ' + error.message });
+    }
 };
 
 // List all restaurants
-const listRestaurants = (req, res) => {
-    Restaurant.getAll((err, restaurants) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+const listRestaurants = async (req, res) => {
+    try {
+        const restaurants = await getAllRestaurants();
         res.status(200).json(restaurants);
-    });
+    } catch (error) {
+        console.error('Error fetching restaurants:', error);
+        res.status(500).json({ error: 'Error fetching restaurants: ' + error.message });
+    }
 };
 
-// Search for restaurants by cuisine type
-const searchRestaurants = (req, res) => {
-    const cuisineType = req.query.cuisineType || null; // Optional query param
-    Restaurant.search(cuisineType, (err, restaurants) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+// Search for restaurants by name
+const searchRestaurantsByName = async (req, res) => {
+    const { name } = req.query;
+    try {
+        const restaurants = await searchRestaurants(name);
         res.status(200).json(restaurants);
-    });
+    } catch (error) {
+        console.error('Error searching for restaurants:', error);
+        res.status(500).json({ error: 'Error searching for restaurants: ' + error.message });
+    }
 };
 
 // Update restaurant details
-const updateRestaurant = (req, res) => {
-    const restaurantData = req.body;
-    Restaurant.update(restaurantData, (err) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+const updateRestaurantDetails = async (req, res) => {
+    const { restaurant_id, owner_id, name, address, phone_number, cuisine_type, opening_time, closing_time } = req.body;
+    try {
+        await updateRestaurant(restaurant_id, owner_id, name, address, phone_number, cuisine_type, opening_time, closing_time);
         res.status(200).json({ message: 'Restaurant updated successfully!' });
-    });
+    } catch (error) {
+        console.error('Error updating restaurant:', error);
+        res.status(500).json({ error: 'Error updating restaurant: ' + error.message });
+    }
 };
 
-module.exports = { addRestaurant, listRestaurants, searchRestaurants, updateRestaurant };
+module.exports = { addNewRestaurant, listRestaurants, searchRestaurantsByName, updateRestaurantDetails };

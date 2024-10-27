@@ -1,28 +1,50 @@
 // models/restaurantModel.js
-const db = require('../config/db');
+const {
+    addRestaurant,
+    getAllRestaurants,
+    searchRestaurants,
+    updateRestaurant
+} = require('../config/database');
 
 const Restaurant = {
-    // Create a new restaurant 
-    create: (data, callback) => {
-        const query = `CALL add_restaurant(?, ?, ?, ?, ?, ?, ?)`;
-        db.query(query, [data.owner_id, data.name, data.address, data.phone_number, data.cuisine_type, data.opening_time, data.closing_time], callback);
-    },
-    
-    // GEr all the  restaurants
-    getAll: (callback) => {
-        db.query(`SELECT * FROM Restaurants`, callback);
-    },
-
-    // Search for restaurants by cuisine type 
-    search: (cuisineType, callback) => {
-        const query = `CALL search_restaurants(?)`;
-        db.query(query, [cuisineType], callback);
+    // Create a new restaurant
+    create: async (data) => {
+        try {
+            await addRestaurant(data.owner_id, data.name, data.address, data.phone_number, data.cuisine_type, data.opening_time, data.closing_time);
+            return { success: true, message: 'Restaurant added successfully!' };
+        } catch (error) {
+            throw new Error('Error adding restaurant: ' + error.message);
+        }
     },
 
-    // Update restaurant details 
-    update: (data, callback) => {
-        const query = `CALL update_restaurant(?, ?, ?, ?, ?, ?, ?)`;
-        db.query(query, [data.restaurant_id, data.name, data.address, data.phone_number, data.cuisine_type, data.opening_time, data.closing_time], callback);
+    // Get all restaurants
+    getAll: async () => {
+        try {
+            const restaurants = await getAllRestaurants();
+            return restaurants;
+        } catch (error) {
+            throw new Error('Error fetching restaurants: ' + error.message);
+        }
+    },
+
+    // Search for restaurants by name
+    search: async (name) => {
+        try {
+            const restaurants = await searchRestaurants(name);
+            return restaurants;
+        } catch (error) {
+            throw new Error('Error searching for restaurants: ' + error.message);
+        }
+    },
+
+    // Update restaurant details
+    update: async (data) => {
+        try {
+            await updateRestaurant(data.restaurant_id, data.owner_id, data.name, data.address, data.phone_number, data.cuisine_type, data.opening_time, data.closing_time);
+            return { success: true, message: 'Restaurant updated successfully!' };
+        } catch (error) {
+            throw new Error('Error updating restaurant: ' + error.message);
+        }
     }
 };
 
